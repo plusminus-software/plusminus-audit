@@ -1,0 +1,92 @@
+[
+  {
+    "number": 1,
+    "entityType": "company.plusminus.data.TestEntity",
+    "entityId": 1,
+    "time": "2019-03-20T15:15:01Z",
+    "username": "User 2",
+    "device": "Device 2",
+    "action": "CREATE",
+    "current": false
+  },
+  {
+    "number": 2,
+    "entityType": "company.plusminus.data.TestEntity",
+    "entityId": 1,
+    "time": "2019-03-21T15:15:02Z",
+    "username": "User 2",
+    "device": "Device 2",
+    "action": "UPDATE",
+    "current": false
+  },
+  {
+    "number": 3,
+    "entityType": "company.plusminus.data.TestEntity",
+    "entityId": 1,
+    "time": "2019-03-22T15:15:03Z",
+    "username": "User 1",
+    "device": "Device 1",
+    "action": "DELETE",
+    "current": true
+  },
+  {
+    "number": 4,
+    "entityType": "company.plusminus.data.TestEntity",
+    "entityId": 2,
+    "time": "2019-03-20T15:15:04Z",
+    "username": "User 1",
+    "device": "Device 1",
+    "action": "CREATE",
+    "current": false
+  },
+  {
+    "number": 5,
+    "entityType": "company.plusminus.data.TestEntity",
+    "entityId": 2,
+    "time": "2019-03-21T15:15:05Z",
+    "username": "User 1",
+    "device": "Device 1",
+    "action": "UPDATE",
+    "current": false
+  },
+  {
+    "number": 6,
+    "entityType": "company.plusminus.data.TestEntity",
+    "entityId": 2,
+    "time": "2019-03-22T15:15:05Z",
+    "username": "User 2",
+    "device": "Device 2",
+    "action": "UPDATE",
+    "current": true
+  },
+  {
+    "number": 7,
+    "entityType": "company.plusminus.data.TestEntity",
+    "entityId": 3,
+    "time": "2019-03-23T15:15:04Z",
+    "username": "User 1",
+    "device": "Device 1",
+    "action": "CREATE",
+    "current": false
+  },
+  {
+    "number": 8,
+    "entityType": "company.plusminus.data.TestEntity",
+    "entityId": 3,
+    "time": "2019-03-24T15:15:03Z",
+    "username": "User 1",
+    "device": "Device 1",
+    "action": "UPDATE",
+    "current": false
+  },
+  {
+    "number": 9,
+    "entityType": "company.plusminus.data.TestEntity",
+    "entityId": 3,
+    "time": "2019-03-25T15:15:02Z",
+    "username": "User 1",
+    "device": "Device 1",
+    "action": "UPDATE",
+    "current": true
+  }
+]

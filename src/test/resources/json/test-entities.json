@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "myField": "Some value 1",
+    "version": 0,
+    "tenant": "Some tenant"
+  },
+  {
+    "id": 2,
+    "myField": "Some value 2",
+    "version": 0,
+    "tenant": "Some tenant"
+  },
+  {
+    "id": 3,
+    "myField": "Some value 3",
+    "version": 0,
+    "tenant": "Some tenant"
+  }
+]
