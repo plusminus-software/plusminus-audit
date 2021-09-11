@@ -21,15 +21,15 @@ import javax.annotation.PostConstruct;
 import javax.persistence.EntityManagerFactory;
 
 @Component
-@ConditionalOnBean(WriteLogService.class)
+@ConditionalOnBean(AuditLogService.class)
 @SuppressFBWarnings("SE_NO_SERIALVERSIONID")
-public class WriteLogListener implements PreInsertEventListener,
+public class AuditLogListener implements PreInsertEventListener,
         PreUpdateEventListener, PreDeleteEventListener {
 
     @Autowired
     private transient EntityManagerFactory entityManagerFactory;
     @Autowired
-    private transient WriteLogService service;
+    private transient AuditLogService service;
 
     @PostConstruct
     private void init() {

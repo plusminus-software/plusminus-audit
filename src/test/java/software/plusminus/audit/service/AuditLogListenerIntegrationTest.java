@@ -13,7 +13,7 @@ import software.plusminus.audit.TestEntity;
 import software.plusminus.audit.TestEntityRepository;
 import software.plusminus.audit.TransactionalService;
 import software.plusminus.audit.exception.AuditException;
-import software.plusminus.audit.model.WriteLog;
+import software.plusminus.audit.model.AuditLog;
 import software.plusminus.check.util.JsonUtils;
 import software.plusminus.security.context.SecurityContext;
 
@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @ActiveProfiles("test")
-public class WriteLogListenerIntegrationTest {
+public class AuditLogListenerIntegrationTest {
 
     @Autowired
     private TransactionalService transactionalService;
@@ -49,12 +49,12 @@ public class WriteLogListenerIntegrationTest {
         created.setMyField("changed");
         entityRepository.save(created);
 
-        WriteLog writeLog1 = entityManager.find(WriteLog.class, 1L);
-        WriteLog writeLog2 = entityManager.find(WriteLog.class, 2L);
-        WriteLog writeLogNull = entityManager.find(WriteLog.class, 3L);
-        assertThat(writeLog1.isCurrent()).isFalse();
-        assertThat(writeLog2.isCurrent()).isTrue();
-        assertThat(writeLogNull).isNull();
+        AuditLog auditLog1 = entityManager.find(AuditLog.class, 1L);
+        AuditLog auditLog2 = entityManager.find(AuditLog.class, 2L);
+        AuditLog auditLogNull = entityManager.find(AuditLog.class, 3L);
+        assertThat(auditLog1.isCurrent()).isFalse();
+        assertThat(auditLog2.isCurrent()).isTrue();
+        assertThat(auditLogNull).isNull();
     }
 
     @Test
@@ -68,10 +68,10 @@ public class WriteLogListenerIntegrationTest {
             created.setMyField("changed");
             entityRepository.save(created);
         });
-        WriteLog writeLog1 = entityManager.find(WriteLog.class, 1L);
-        WriteLog writeLogNull = entityManager.find(WriteLog.class, 2L);
-        assertThat(writeLog1.isCurrent()).isTrue();
-        assertThat(writeLogNull).isNull();
+        AuditLog auditLog1 = entityManager.find(AuditLog.class, 1L);
+        AuditLog auditLogNull = entityManager.find(AuditLog.class, 2L);
+        assertThat(auditLog1.isCurrent()).isTrue();
+        assertThat(auditLogNull).isNull();
     }
 
     @Test
@@ -91,8 +91,8 @@ public class WriteLogListenerIntegrationTest {
             exception = true;
         }
 
-        WriteLog writeLog1 = entityManager.find(WriteLog.class, 1L);
-        assertThat(writeLog1).isNull();
+        AuditLog auditLog1 = entityManager.find(AuditLog.class, 1L);
+        assertThat(auditLog1).isNull();
         assertThat(exception).isTrue();
     }
 
@@ -114,10 +114,10 @@ public class WriteLogListenerIntegrationTest {
             exception = true;
         }
 
-        WriteLog writeLog1 = entityManager.find(WriteLog.class, 1L);
-        WriteLog writeLog2 = entityManager.find(WriteLog.class, 2L);
-        assertThat(writeLog1.isCurrent()).isTrue();
-        assertThat(writeLog2).isNull();
+        AuditLog auditLog1 = entityManager.find(AuditLog.class, 1L);
+        AuditLog auditLog2 = entityManager.find(AuditLog.class, 2L);
+        assertThat(auditLog1.isCurrent()).isTrue();
+        assertThat(auditLog2).isNull();
         assertThat(exception).isTrue();
     }
 

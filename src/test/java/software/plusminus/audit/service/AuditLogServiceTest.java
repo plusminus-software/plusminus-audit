@@ -10,8 +10,8 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 import software.plusminus.audit.TestEntity;
-import software.plusminus.audit.model.WriteLog;
-import software.plusminus.audit.repository.WriteLogRepository;
+import software.plusminus.audit.model.AuditLog;
+import software.plusminus.audit.repository.AuditLogRepository;
 import software.plusminus.check.util.JsonUtils;
 import software.plusminus.security.context.DeviceContext;
 import software.plusminus.security.context.SecurityContext;
@@ -23,20 +23,20 @@ import static org.mockito.Mockito.when;
 import static software.plusminus.check.Checks.check;
 
 @RunWith(MockitoJUnitRunner.class)
-public class WriteLogServiceTest {
+public class AuditLogServiceTest {
 
     @Mock
     private SecurityContext securityContext;
     @Mock
     private DeviceContext deviceContext;
     @Mock
-    private WriteLogRepository writeLogRepository;
+    private AuditLogRepository auditLogRepository;
 
     @InjectMocks
-    private WriteLogService service;
+    private AuditLogService service;
 
     @Captor
-    private ArgumentCaptor<WriteLog> captor;
+    private ArgumentCaptor<AuditLog> captor;
 
     @Before
     public void setUp() {
@@ -46,96 +46,96 @@ public class WriteLogServiceTest {
     }
 
     @Test
-    public void logCreate_CreatesWriteLog() {
+    public void logCreate_CreatesAuditLog() {
         TestEntity entity = JsonUtils.fromJson("/json/test-entity.json", TestEntity.class);
 
         service.logCreate(entity);
 
-        verify(writeLogRepository).save(captor.capture());
+        verify(auditLogRepository).save(captor.capture());
         check(captor.getValue().getDevice()).is("TestDevice");
         check(captor.getValue().getUsername()).is("TestUser");
         check(captor.getValue().getTenant()).is("Some tenant");
     }
 
     @Test
-    public void logUpdate_CreatesWriteLog() {
+    public void logUpdate_CreatesAuditLog() {
         TestEntity entity = JsonUtils.fromJson("/json/test-entity.json", TestEntity.class);
-        when(writeLogRepository.save(any()))
+        when(auditLogRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArguments()[0]);
-        prepareCurrentWriteLog();
+        prepareCurrentAuditLog();
 
         service.logUpdate(entity);
 
-        verify(writeLogRepository, times(2)).save(captor.capture());
+        verify(auditLogRepository, times(2)).save(captor.capture());
         check(captor.getAllValues().get(1).getDevice()).is("TestDevice");
         check(captor.getAllValues().get(1).getUsername()).is("TestUser");
         check(captor.getValue().getTenant()).is("Some tenant");
     }
 
     @Test
-    public void logUpdate_ChangesPreviousWriteLog() {
+    public void logUpdate_ChangesPreviousAuditLog() {
         TestEntity entity = JsonUtils.fromJson("/json/test-entity.json", TestEntity.class);
-        when(writeLogRepository.save(any()))
+        when(auditLogRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArguments()[0]);
-        WriteLog previousWriteLog = prepareCurrentWriteLog();
+        AuditLog previousAuditLog = prepareCurrentAuditLog();
 
         service.logUpdate(entity);
 
-        check(previousWriteLog.isCurrent()).isFalse();
-        verify(writeLogRepository, times(2)).save(captor.capture());
-        check(captor.getAllValues().get(0)).is(previousWriteLog);
+        check(previousAuditLog.isCurrent()).isFalse();
+        verify(auditLogRepository, times(2)).save(captor.capture());
+        check(captor.getAllValues().get(0)).is(previousAuditLog);
     }
 
     @Test
-    public void logDelete_CreatesWriteLog() {
+    public void logDelete_CreatesAuditLog() {
         TestEntity entity = JsonUtils.fromJson("/json/test-entity.json", TestEntity.class);
-        when(writeLogRepository.save(any()))
+        when(auditLogRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArguments()[0]);
-        prepareCurrentWriteLog();
+        prepareCurrentAuditLog();
 
         service.logDelete(entity);
 
-        verify(writeLogRepository, times(2)).save(captor.capture());
+        verify(auditLogRepository, times(2)).save(captor.capture());
         check(captor.getAllValues().get(1).getDevice()).is("TestDevice");
         check(captor.getAllValues().get(1).getUsername()).is("TestUser");
         check(captor.getAllValues().get(1).getTenant()).is("Some tenant");
     }
 
     @Test
-    public void logDelete_ChangesPreviousWriteLog() {
+    public void logDelete_ChangesPreviousAuditLog() {
         TestEntity entity = JsonUtils.fromJson("/json/test-entity.json", TestEntity.class);
-        when(writeLogRepository.save(any()))
+        when(auditLogRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArguments()[0]);
-        WriteLog previousWriteLog = prepareCurrentWriteLog();
+        AuditLog previousAuditLog = prepareCurrentAuditLog();
 
         service.logDelete(entity);
 
-        check(previousWriteLog.isCurrent()).isFalse();
-        verify(writeLogRepository, times(2)).save(captor.capture());
-        check(captor.getAllValues().get(0)).is(previousWriteLog);
+        check(previousAuditLog.isCurrent()).isFalse();
+        verify(auditLogRepository, times(2)).save(captor.capture());
+        check(captor.getAllValues().get(0)).is(previousAuditLog);
     }
 
     @Test
-    public void unmarkCurrentWriteLog() {
-        WriteLog current = prepareCurrentWriteLog();
-        when(writeLogRepository.save(any()))
+    public void unmarkCurrentAuditLog() {
+        AuditLog current = prepareCurrentAuditLog();
+        when(auditLogRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArguments()[0]);
 
-        WriteLog result = service.unmarkCurrentWriteLog(TestEntity.class.getName(), 1L);
+        AuditLog result = service.unmarkCurrentAuditLog(TestEntity.class.getName(), 1L);
 
         check(result).isNotNull();
         check(result.getNumber()).is(current.getNumber());
         check(result.isCurrent()).isFalse();
-        verify(writeLogRepository).save(captor.capture());
+        verify(auditLogRepository).save(captor.capture());
         check(captor.getValue()).isSame(result);
     }
 
-    private WriteLog prepareCurrentWriteLog() {
-        WriteLog previousWriteLog = new WriteLog();
-        previousWriteLog.setNumber(4L);
-        previousWriteLog.setCurrent(true);
-        when(writeLogRepository.findByEntityTypeAndEntityIdAndCurrentTrue(TestEntity.class.getName(), 1L))
-                .thenReturn(previousWriteLog);
-        return previousWriteLog;
+    private AuditLog prepareCurrentAuditLog() {
+        AuditLog previousAuditLog = new AuditLog();
+        previousAuditLog.setNumber(4L);
+        previousAuditLog.setCurrent(true);
+        when(auditLogRepository.findByEntityTypeAndEntityIdAndCurrentTrue(TestEntity.class.getName(), 1L))
+                .thenReturn(previousAuditLog);
+        return previousAuditLog;
     }
 }

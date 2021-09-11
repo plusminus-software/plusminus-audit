@@ -12,20 +12,22 @@ import org.hibernate.annotations.ParamDef;
 
 import java.time.ZonedDateTime;
 import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.MappedSuperclass;
 
 @Data
 @EqualsAndHashCode(of = "number")
 @ToString(of = "number")
 @FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenant", type = "string"))
 @Filter(name = "tenantFilter", condition = "tenant = :tenant")
-@MappedSuperclass
-public abstract class DataLog<T> {
+@Entity
+public class AuditLog<T> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -58,5 +60,10 @@ public abstract class DataLog<T> {
 
     @Column(updatable = false)
     private String device;
+
+    @Enumerated(EnumType.STRING)
+    private DataAction action;
+
+    private boolean current;
 
 }

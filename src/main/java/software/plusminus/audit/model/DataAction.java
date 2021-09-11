@@ -1,6 +1,6 @@
 package software.plusminus.audit.model;
 
-public enum WriteAction {
+public enum DataAction {
     CREATE,
     UPDATE,
     DELETE

@@ -12,7 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import software.plusminus.audit.TestEntity;
-import software.plusminus.audit.model.WriteLog;
+import software.plusminus.audit.model.AuditLog;
 import software.plusminus.check.util.JsonUtils;
 import software.plusminus.security.context.SecurityContext;
 
@@ -28,45 +28,45 @@ import static software.plusminus.check.Checks.check;
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @ActiveProfiles("test")
-public class WriteLogRepositoryTest {
+public class AuditLogRepositoryTest {
 
     @PersistenceContext
     private EntityManager entityManager;
     @Autowired
-    private WriteLogRepository repository;
+    private AuditLogRepository repository;
 
     @SuppressWarnings("PMD.UnusedPrivateField")
     @MockBean
     private SecurityContext securityService;
 
     private List<TestEntity> entities;
-    private List<WriteLog> writeLogs;
+    private List<AuditLog> auditLogs;
 
     @Before
     public void before() {
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 
         entities = JsonUtils.fromJsonList("/json/test-entities.json", TestEntity[].class);
-        writeLogs = JsonUtils.fromJsonList("/json/writelogs.json", WriteLog[].class);
+        auditLogs = JsonUtils.fromJsonList("/json/auditlogs.json", AuditLog[].class);
         entities.forEach(this::prepareEntityAndCommits);
 
         entities.forEach(entityManager::persist);
-        entityManager.createQuery("delete from WriteLog").executeUpdate();
-        writeLogs.forEach(entityManager::persist);
+        entityManager.createQuery("delete from AuditLog").executeUpdate();
+        auditLogs.forEach(entityManager::persist);
     }
 
     @Transactional
     @Test
     public void findByEntityTypeAndEntityId() {
-        WriteLog result = repository.findByEntityTypeAndEntityIdAndCurrentTrue(
+        AuditLog result = repository.findByEntityTypeAndEntityIdAndCurrentTrue(
                 TestEntity.class.getName(), 2L);
-        check(result).is(writeLogs.get(5));
+        check(result).is(auditLogs.get(5));
     }
 
     @Transactional
     @Test
     public void findIgnoringDevice() {
-        List<WriteLog<?>> result = repository.findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
+        List<AuditLog<?>> result = repository.findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
                 Collections.singletonList(TestEntity.class.getName()),
                 "Device 2",
                 3L,
@@ -74,18 +74,18 @@ public class WriteLogRepositoryTest {
                 .getContent();
 
         check(result).hasSize(2);
-        check(result.get(0)).is(writeLogs.get(2));
-        check(result.get(1)).is(writeLogs.get(8));
+        check(result.get(0)).is(auditLogs.get(2));
+        check(result.get(1)).is(auditLogs.get(8));
     }
 
     private void prepareEntityAndCommits(TestEntity entity) {
         int index = entities.indexOf(entity);
-        writeLogs.subList(index * 3, index * 3 + 3)
-                .forEach(writeLog -> {
-                    writeLog.setNumber(null);
-                    writeLog.setEntityType(null);
-                    writeLog.setEntityId(null);
-                    writeLog.setEntity(entity);
+        auditLogs.subList(index * 3, index * 3 + 3)
+                .forEach(auditLog -> {
+                    auditLog.setNumber(null);
+                    auditLog.setEntityType(null);
+                    auditLog.setEntityId(null);
+                    auditLog.setEntity(entity);
                 });
 
         entity.setId(null);
