@@ -55,18 +55,8 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         <dependency>
-            <groupId>company.plusminus</groupId>
-            <artifactId>plusminus-generator</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>software.plusminus</groupId>
             <artifactId>plusminus-utils</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>company.plusminus</groupId>
-            <artifactId>plusminus-patch</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>

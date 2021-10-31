@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-software.plusminus.audit.config.AuditConfig
+software.plusminus.audit.config.AuditAutoconfig

@@ -1,9 +1,5 @@
 package software.plusminus.audit.service;
 
-import company.plusminus.util.AnnotationUtils;
-import company.plusminus.util.EntityUtils;
-import company.plusminus.util.FieldUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -14,6 +10,9 @@ import software.plusminus.audit.model.DataAction;
 import software.plusminus.audit.repository.AuditLogRepository;
 import software.plusminus.security.context.DeviceContext;
 import software.plusminus.security.context.SecurityContext;
+import software.plusminus.util.AnnotationUtils;
+import software.plusminus.util.EntityUtils;
+import software.plusminus.util.FieldUtils;
 
 import java.time.ZonedDateTime;
 import javax.annotation.Nullable;
@@ -77,7 +76,7 @@ public class AuditLogService {
         auditLog.setUsername(securityContext.getUsername());
         auditLog.setDevice(deviceContext.currentDevice());
         if (auditLog.getDevice() == null) {
-            auditLog.setDevice(StringUtils.EMPTY);
+            auditLog.setDevice("");
         }
         auditLog.setTenant(FieldUtils.readFirst(entity, String.class,
                 field -> AnnotationUtils.isArrayContain(field.getAnnotations(), "Tenant")));

@@ -1,7 +1,7 @@
 [
   {
     "number": 1,
-    "entityType": "company.plusminus.data.TestEntity",
+    "entityType": "software.plusminus.data.TestEntity",
     "entityId": 1,
     "time": "2019-03-20T15:15:01Z",
     "username": "User 2",
@@ -11,7 +11,7 @@
   },
   {
     "number": 2,
-    "entityType": "company.plusminus.data.TestEntity",
+    "entityType": "software.plusminus.data.TestEntity",
     "entityId": 1,
     "time": "2019-03-21T15:15:02Z",
     "username": "User 2",
@@ -21,7 +21,7 @@
   },
   {
     "number": 3,
-    "entityType": "company.plusminus.data.TestEntity",
+    "entityType": "software.plusminus.data.TestEntity",
     "entityId": 1,
     "time": "2019-03-22T15:15:03Z",
     "username": "User 1",
@@ -31,7 +31,7 @@
   },
   {
     "number": 4,
-    "entityType": "company.plusminus.data.TestEntity",
+    "entityType": "software.plusminus.data.TestEntity",
     "entityId": 2,
     "time": "2019-03-20T15:15:04Z",
     "username": "User 1",
@@ -41,7 +41,7 @@
   },
   {
     "number": 5,
-    "entityType": "company.plusminus.data.TestEntity",
+    "entityType": "software.plusminus.data.TestEntity",
     "entityId": 2,
     "time": "2019-03-21T15:15:05Z",
     "username": "User 1",
@@ -51,7 +51,7 @@
   },
   {
     "number": 6,
-    "entityType": "company.plusminus.data.TestEntity",
+    "entityType": "software.plusminus.data.TestEntity",
     "entityId": 2,
     "time": "2019-03-22T15:15:05Z",
     "username": "User 2",
@@ -61,7 +61,7 @@
   },
   {
     "number": 7,
-    "entityType": "company.plusminus.data.TestEntity",
+    "entityType": "software.plusminus.data.TestEntity",
     "entityId": 3,
     "time": "2019-03-23T15:15:04Z",
     "username": "User 1",
@@ -71,7 +71,7 @@
   },
   {
     "number": 8,
-    "entityType": "company.plusminus.data.TestEntity",
+    "entityType": "software.plusminus.data.TestEntity",
     "entityId": 3,
     "time": "2019-03-24T15:15:03Z",
     "username": "User 1",
@@ -81,7 +81,7 @@
   },
   {
     "number": 9,
-    "entityType": "company.plusminus.data.TestEntity",
+    "entityType": "software.plusminus.data.TestEntity",
     "entityId": 3,
     "time": "2019-03-25T15:15:02Z",
     "username": "User 1",

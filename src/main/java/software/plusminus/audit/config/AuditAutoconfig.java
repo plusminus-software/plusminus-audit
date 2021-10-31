@@ -9,5 +9,5 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @ComponentScan("software.plusminus.audit")
 @EntityScan("software.plusminus.audit")
 @EnableJpaRepositories("software.plusminus.audit")
-public class AuditConfig {
+public class AuditAutoconfig {
 }

@@ -3,10 +3,10 @@ package software.plusminus.audit;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
-import software.plusminus.audit.config.AuditConfig;
+import software.plusminus.audit.config.AuditAutoconfig;
 
 @SpringBootApplication
-@Import(AuditConfig.class)
+@Import(AuditAutoconfig.class)
 public class TestApplication {
     
     public static void main(String[] args) {
