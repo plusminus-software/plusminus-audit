@@ -19,13 +19,19 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
+import javax.persistence.Table;
 
 @Data
 @EqualsAndHashCode(of = "number")
 @ToString(of = "number")
 @FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenant", type = "string"))
 @Filter(name = "tenantFilter", condition = "tenant = :tenant")
+@Table(indexes = {
+        @Index(columnList = "entity_type, entity_id, current, tenant"),
+        @Index(columnList = "entity_type, device, number, current, tenant")
+})
 @Entity
 public class AuditLog<T> {
 
