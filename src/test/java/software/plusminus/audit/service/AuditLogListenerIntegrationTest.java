@@ -9,12 +9,14 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import software.plusminus.audit.InnerEntity;
 import software.plusminus.audit.TestEntity;
 import software.plusminus.audit.TestEntityRepository;
 import software.plusminus.audit.TransactionalService;
 import software.plusminus.audit.exception.AuditException;
 import software.plusminus.audit.model.AuditLog;
 import software.plusminus.check.util.JsonUtils;
+import software.plusminus.data.service.data.DataService;
 import software.plusminus.security.context.SecurityContext;
 
 import javax.persistence.EntityManager;
@@ -33,6 +35,8 @@ public class AuditLogListenerIntegrationTest {
     private TestEntityRepository entityRepository;
     @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private DataService dataService;
 
     @SuppressWarnings("PMD.UnusedPrivateField")
     @MockBean
@@ -72,6 +76,27 @@ public class AuditLogListenerIntegrationTest {
         AuditLog auditLogNull = entityManager.find(AuditLog.class, 2L);
         assertThat(auditLog1.isCurrent()).isTrue();
         assertThat(auditLogNull).isNull();
+    }
+    
+    @Test
+    public void createWithInnerEntityInTheSameTransaction() {
+        TestEntity entity = JsonUtils.fromJson("/json/test-entity.json", TestEntity.class);
+        entity.setId(null);
+        entity.setVersion(null);
+        entity.setTenant("localhost");
+        InnerEntity innerEntity = new InnerEntity();
+        innerEntity.setId(null);
+        innerEntity.setVersion(null);
+        innerEntity.setTenant("localhost");
+        entity.setInnerEntity(innerEntity);
+        transactionalService.inTransaction(() -> {
+            dataService.create(entity);
+            dataService.create(innerEntity);
+        });
+        AuditLog auditLog1 = entityManager.find(AuditLog.class, 1L);
+        AuditLog auditLog2 = entityManager.find(AuditLog.class, 2L);
+        assertThat(auditLog1.isCurrent()).isTrue();
+        assertThat(auditLog2.isCurrent()).isTrue();
     }
 
     @Test
