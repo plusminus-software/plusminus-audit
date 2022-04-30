@@ -10,6 +10,7 @@ import software.plusminus.audit.model.DataAction;
 import software.plusminus.audit.repository.AuditLogRepository;
 import software.plusminus.security.context.DeviceContext;
 import software.plusminus.security.context.SecurityContext;
+import software.plusminus.tenant.service.TenantService;
 import software.plusminus.util.AnnotationUtils;
 import software.plusminus.util.EntityUtils;
 import software.plusminus.util.FieldUtils;
@@ -24,6 +25,8 @@ public class AuditLogService {
     private SecurityContext securityContext;
     @Autowired
     private DeviceContext deviceContext;
+    @Autowired
+    private TenantService tenantService;
     @Autowired
     private AuditLogService self;
     @Autowired
@@ -78,8 +81,7 @@ public class AuditLogService {
         if (auditLog.getDevice() == null) {
             auditLog.setDevice("");
         }
-        auditLog.setTenant(FieldUtils.readFirst(entity, String.class,
-                field -> AnnotationUtils.isArrayContain(field.getAnnotations(), "Tenant")));
+        auditLog.setTenant(getTenant(entity));
         auditLog.setAction(action);
         return auditLog;
     }
@@ -97,5 +99,14 @@ public class AuditLogService {
             throw new AuditException("Can't save AuditLog: entity id is null");
         }
         return id;
+    }
+    
+    private String getTenant(Object entity) {
+        String tenant = FieldUtils.readFirst(entity, String.class, 
+                field -> AnnotationUtils.isArrayContain(field.getAnnotations(), "Tenant"));
+        if (tenant == null) {
+            tenant = tenantService.currentTenant();
+        }
+        return tenant;
     }
 }

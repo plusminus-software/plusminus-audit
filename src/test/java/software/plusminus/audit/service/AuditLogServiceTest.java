@@ -15,6 +15,7 @@ import software.plusminus.audit.repository.AuditLogRepository;
 import software.plusminus.check.util.JsonUtils;
 import software.plusminus.security.context.DeviceContext;
 import software.plusminus.security.context.SecurityContext;
+import software.plusminus.tenant.service.TenantService;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -29,6 +30,8 @@ public class AuditLogServiceTest {
     private SecurityContext securityContext;
     @Mock
     private DeviceContext deviceContext;
+    @Mock
+    private TenantService tenantService;
     @Mock
     private AuditLogRepository auditLogRepository;
 
@@ -55,6 +58,19 @@ public class AuditLogServiceTest {
         check(captor.getValue().getDevice()).is("TestDevice");
         check(captor.getValue().getUsername()).is("TestUser");
         check(captor.getValue().getTenant()).is("Some tenant");
+    }
+    
+    @Test
+    public void logCreate_PopulatesTenant() {
+        String tenant = "tenantFromService";
+        TestEntity entity = JsonUtils.fromJson("/json/test-entity.json", TestEntity.class);
+        entity.setTenant(null);
+        when(tenantService.currentTenant()).thenReturn(tenant);
+
+        service.logCreate(entity);
+
+        verify(auditLogRepository).save(captor.capture());
+        check(captor.getValue().getTenant()).is(tenant);
     }
 
     @Test
