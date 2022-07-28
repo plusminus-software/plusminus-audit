@@ -13,7 +13,6 @@ import software.plusminus.audit.TestEntity;
 import software.plusminus.audit.model.AuditLog;
 import software.plusminus.audit.repository.AuditLogRepository;
 import software.plusminus.check.util.JsonUtils;
-import software.plusminus.security.context.DeviceContext;
 import software.plusminus.security.context.SecurityContext;
 import software.plusminus.tenant.service.TenantService;
 

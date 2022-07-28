@@ -8,7 +8,6 @@ import software.plusminus.audit.exception.AuditException;
 import software.plusminus.audit.model.AuditLog;
 import software.plusminus.audit.model.DataAction;
 import software.plusminus.audit.repository.AuditLogRepository;
-import software.plusminus.security.context.DeviceContext;
 import software.plusminus.security.context.SecurityContext;
 import software.plusminus.tenant.service.TenantService;
 import software.plusminus.util.AnnotationUtils;

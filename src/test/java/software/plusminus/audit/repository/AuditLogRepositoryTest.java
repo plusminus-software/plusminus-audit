@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import software.plusminus.audit.TestEntity;
 import software.plusminus.audit.model.AuditLog;
 import software.plusminus.check.util.JsonUtils;
+import software.plusminus.inject.NoInject;
 import software.plusminus.security.context.SecurityContext;
 
 import java.util.Collections;
@@ -24,6 +25,7 @@ import javax.persistence.PersistenceContext;
 
 import static software.plusminus.check.Checks.check;
 
+@NoInject
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
