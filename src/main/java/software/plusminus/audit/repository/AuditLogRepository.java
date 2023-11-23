@@ -21,4 +21,7 @@ public interface AuditLogRepository extends Repository<AuditLog, Long> {
     <T> Page<AuditLog<? extends T>> findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
             List<String> types, String ignoreDevice, Long numberGreaterThan, Pageable pageable);
 
+    @SuppressWarnings("squid:S1452")
+    <T> Page<AuditLog<? extends T>> findByCurrentTrue(Pageable pageable);
+
 }
