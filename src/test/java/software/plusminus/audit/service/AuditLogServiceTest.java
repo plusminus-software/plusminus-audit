@@ -16,6 +16,8 @@ import software.plusminus.check.util.JsonUtils;
 import software.plusminus.security.context.SecurityContext;
 import software.plusminus.tenant.service.TenantService;
 
+import java.util.UUID;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -30,6 +32,8 @@ public class AuditLogServiceTest {
     @Mock
     private DeviceContext deviceContext;
     @Mock
+    private TransactionContext transactionContext;
+    @Mock
     private TenantService tenantService;
     @Mock
     private AuditLogRepository auditLogRepository;
@@ -40,11 +44,14 @@ public class AuditLogServiceTest {
     @Captor
     private ArgumentCaptor<AuditLog> captor;
 
+    private UUID transactionId = UUID.fromString("3a37e67d-a8b2-4c35-9e6f-a4e4b686ffb5");
+
     @Before
     public void setUp() {
         ReflectionTestUtils.setField(service, "self", service);
         when(securityContext.getUsername()).thenReturn("TestUser");
         when(deviceContext.currentDevice()).thenReturn("TestDevice");
+        when(transactionContext.currentTransactionId()).thenReturn(transactionId);
     }
 
     @Test
@@ -57,6 +64,7 @@ public class AuditLogServiceTest {
         check(captor.getValue().getDevice()).is("TestDevice");
         check(captor.getValue().getUsername()).is("TestUser");
         check(captor.getValue().getTenant()).is("Some tenant");
+        check(captor.getValue().getTransactionId()).is(transactionId);
     }
     
     @Test
@@ -85,6 +93,7 @@ public class AuditLogServiceTest {
         check(captor.getAllValues().get(1).getDevice()).is("TestDevice");
         check(captor.getAllValues().get(1).getUsername()).is("TestUser");
         check(captor.getValue().getTenant()).is("Some tenant");
+        check(captor.getValue().getTransactionId()).is(transactionId);
     }
 
     @Test
@@ -114,6 +123,7 @@ public class AuditLogServiceTest {
         check(captor.getAllValues().get(1).getDevice()).is("TestDevice");
         check(captor.getAllValues().get(1).getUsername()).is("TestUser");
         check(captor.getAllValues().get(1).getTenant()).is("Some tenant");
+        check(captor.getAllValues().get(1).getTransactionId()).is(transactionId);
     }
 
     @Test

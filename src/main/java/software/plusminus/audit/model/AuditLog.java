@@ -9,8 +9,10 @@ import org.hibernate.annotations.AnyMetaDef;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
+import org.hibernate.annotations.Type;
 
 import java.time.ZonedDateTime;
+import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -23,6 +25,7 @@ import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.Table;
 
+@SuppressWarnings("checkstyle:ClassFanOutComplexity")
 @Data
 @EqualsAndHashCode(of = "number")
 @ToString(of = "number")
@@ -71,5 +74,9 @@ public class AuditLog<T> {
     private DataAction action;
 
     private boolean current;
+
+    @Column(updatable = false)
+    @Type(type = "uuid-char")
+    private UUID transactionId;
 
 }

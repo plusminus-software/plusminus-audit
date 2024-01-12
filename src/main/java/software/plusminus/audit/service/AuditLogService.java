@@ -25,6 +25,8 @@ public class AuditLogService {
     @Autowired
     private DeviceContext deviceContext;
     @Autowired
+    private TransactionContext transactionContext;
+    @Autowired
     private TenantService tenantService;
     @Autowired
     private AuditLogService self;
@@ -77,6 +79,7 @@ public class AuditLogService {
         auditLog.setCurrent(true);
         auditLog.setUsername(securityContext.getUsername());
         auditLog.setDevice(deviceContext.currentDevice());
+        auditLog.setTransactionId(transactionContext.currentTransactionId());
         if (auditLog.getDevice() == null) {
             auditLog.setDevice("");
         }
