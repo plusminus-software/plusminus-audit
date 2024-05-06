@@ -15,13 +15,16 @@ import software.plusminus.audit.TestEntityRepository;
 import software.plusminus.audit.TransactionalService;
 import software.plusminus.audit.exception.AuditException;
 import software.plusminus.audit.model.AuditLog;
+import software.plusminus.audit.model.DataAction;
 import software.plusminus.check.util.JsonUtils;
 import software.plusminus.data.service.data.DataService;
 import software.plusminus.security.context.SecurityContext;
 
+import java.util.UUID;
 import javax.persistence.EntityManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -41,6 +44,8 @@ public class AuditLogListenerIntegrationTest {
     @SuppressWarnings("PMD.UnusedPrivateField")
     @MockBean
     private SecurityContext securityContext;
+    @MockBean
+    private TransactionContext transactionContext;
 
     @Test
     public void createAndUpdateInDifferentTransactions() {
@@ -53,9 +58,9 @@ public class AuditLogListenerIntegrationTest {
         created.setMyField("changed");
         entityRepository.save(created);
 
-        AuditLog auditLog1 = entityManager.find(AuditLog.class, 1L);
-        AuditLog auditLog2 = entityManager.find(AuditLog.class, 2L);
-        AuditLog auditLogNull = entityManager.find(AuditLog.class, 3L);
+        AuditLog<?> auditLog1 = entityManager.find(AuditLog.class, 1L);
+        AuditLog<?> auditLog2 = entityManager.find(AuditLog.class, 2L);
+        AuditLog<?> auditLogNull = entityManager.find(AuditLog.class, 3L);
         assertThat(auditLog1.isCurrent()).isFalse();
         assertThat(auditLog2.isCurrent()).isTrue();
         assertThat(auditLogNull).isNull();
@@ -63,21 +68,27 @@ public class AuditLogListenerIntegrationTest {
 
     @Test
     public void createAndUpdateInTheSameTransaction() {
+        UUID transactionId = UUID.randomUUID();
         TestEntity entity = JsonUtils.fromJson("/json/test-entity.json", TestEntity.class);
         entity.setId(null);
         entity.setVersion(null);
         entity.setTenant("localhost");
+        when(transactionContext.currentTransactionId())
+                .thenReturn(transactionId);
+
         transactionalService.inTransaction(() -> {
             TestEntity created = entityRepository.save(entity);
-            created.setMyField("changed");
             entityRepository.save(created);
         });
-        AuditLog auditLog1 = entityManager.find(AuditLog.class, 1L);
-        AuditLog auditLogNull = entityManager.find(AuditLog.class, 2L);
+
+        AuditLog<?> auditLog1 = entityManager.find(AuditLog.class, 1L);
+        AuditLog<?> auditLogNull = entityManager.find(AuditLog.class, 2L);
         assertThat(auditLog1.isCurrent()).isTrue();
+        assertThat(auditLog1.getTransactionId()).isEqualTo(transactionId);
+        assertThat(auditLog1.getAction()).isEqualTo(DataAction.CREATE);
         assertThat(auditLogNull).isNull();
     }
-    
+
     @Test
     public void createWithInnerEntityInTheSameTransaction() {
         TestEntity entity = JsonUtils.fromJson("/json/test-entity.json", TestEntity.class);
@@ -93,10 +104,12 @@ public class AuditLogListenerIntegrationTest {
             dataService.create(entity);
             dataService.create(innerEntity);
         });
-        AuditLog auditLog1 = entityManager.find(AuditLog.class, 1L);
-        AuditLog auditLog2 = entityManager.find(AuditLog.class, 2L);
+        AuditLog<?> auditLog1 = entityManager.find(AuditLog.class, 1L);
+        AuditLog<?> auditLog2 = entityManager.find(AuditLog.class, 2L);
+        AuditLog<?> auditLogNull = entityManager.find(AuditLog.class, 3L);
         assertThat(auditLog1.isCurrent()).isTrue();
         assertThat(auditLog2.isCurrent()).isTrue();
+        assertThat(auditLogNull).isNull();
     }
 
     @Test
@@ -116,7 +129,7 @@ public class AuditLogListenerIntegrationTest {
             exception = true;
         }
 
-        AuditLog auditLog1 = entityManager.find(AuditLog.class, 1L);
+        AuditLog<?> auditLog1 = entityManager.find(AuditLog.class, 1L);
         assertThat(auditLog1).isNull();
         assertThat(exception).isTrue();
     }
@@ -139,8 +152,8 @@ public class AuditLogListenerIntegrationTest {
             exception = true;
         }
 
-        AuditLog auditLog1 = entityManager.find(AuditLog.class, 1L);
-        AuditLog auditLog2 = entityManager.find(AuditLog.class, 2L);
+        AuditLog<?> auditLog1 = entityManager.find(AuditLog.class, 1L);
+        AuditLog<?> auditLog2 = entityManager.find(AuditLog.class, 2L);
         assertThat(auditLog1.isCurrent()).isTrue();
         assertThat(auditLog2).isNull();
         assertThat(exception).isTrue();
@@ -159,8 +172,8 @@ public class AuditLogListenerIntegrationTest {
         updated1.setMyField("changed 2");
         TestEntity updated2 = entityRepository.save(updated1);
 
-        assertThat(entity.getVersion()).isEqualTo(0);
-        assertThat(created.getVersion()).isEqualTo(0);
+        assertThat(entity.getVersion()).isZero();
+        assertThat(created.getVersion()).isZero();
         assertThat(updated1.getVersion()).isEqualTo(1);
         assertThat(updated2.getVersion()).isEqualTo(2);
         assertThat(entityManager.find(TestEntity.class, 1L).getVersion()).isEqualTo(2);

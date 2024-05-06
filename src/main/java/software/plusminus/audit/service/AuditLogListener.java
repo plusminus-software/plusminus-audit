@@ -16,6 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
 import software.plusminus.audit.annotation.Auditable;
+import software.plusminus.audit.model.DataAction;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityManagerFactory;
@@ -42,26 +43,28 @@ public class AuditLogListener implements PreInsertEventListener,
 
     @Override
     public boolean onPreInsert(PreInsertEvent event) {
-        if (isLoggable(event)) {
-            service.logCreate(event.getEntity());
-        }
+        log(event, DataAction.CREATE);
         return false;
     }
 
     @Override
     public boolean onPreUpdate(PreUpdateEvent event) {
-        if (isLoggable(event)) {
-            service.logUpdate(event.getEntity());
-        }
+        log(event, DataAction.UPDATE);
         return false;
     }
 
     @Override
     public boolean onPreDelete(PreDeleteEvent event) {
-        if (isLoggable(event)) {
-            service.logDelete(event.getEntity());
-        }
+        log(event, DataAction.DELETE);
         return false;
+    }
+
+    private void log(AbstractPreDatabaseOperationEvent event, DataAction action) {
+        if (!isLoggable(event)) {
+            return;
+        }
+        event.getSession().getActionQueue()
+                .registerProcess(session -> service.log(session, event.getEntity(), action));
     }
 
     private boolean isLoggable(AbstractPreDatabaseOperationEvent event) {

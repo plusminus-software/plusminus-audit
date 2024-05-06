@@ -1,6 +1,7 @@
 package software.plusminus.audit.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +16,8 @@ import software.plusminus.util.EntityUtils;
 import software.plusminus.util.FieldUtils;
 
 import java.time.ZonedDateTime;
-import javax.annotation.Nullable;
+import java.util.UUID;
+import javax.persistence.EntityManager;
 
 @Service
 public class AuditLogService {
@@ -29,57 +31,34 @@ public class AuditLogService {
     @Autowired
     private TenantService tenantService;
     @Autowired
-    private AuditLogService self;
-    @Autowired
     private AuditLogRepository repository;
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public <T> AuditLog<T> logCreate(T entity) {
-        AuditLog<T> auditLog = prepareAuditLog(entity, DataAction.CREATE);
-        return repository.save(auditLog);
-    }
-
-    @Nullable
-    @Transactional(propagation = Propagation.MANDATORY)
-    public <T> AuditLog<T> logUpdate(T entity) {
-        boolean updated = unmarkCurrentAuditLogForEntity(entity);
-        if (!updated) {
-            return null;
+    public <T> AuditLog<T> log(EntityManager entityManager, T entity, DataAction action) {
+        String entityType = entity.getClass().getName();
+        Long entityId = getEntityId(entity, action);
+        UUID transactionId = transactionContext.currentTransactionId();
+        AuditLog<T> alreadyAdded = isAlreadyPersisted(entityManager, transactionId,
+                entityType, entityId, action);
+        if (alreadyAdded != null) {
+            return alreadyAdded;
         }
-        AuditLog<T> auditLog = prepareAuditLog(entity, DataAction.UPDATE);
-        return repository.save(auditLog);
-    }
-
-    @Nullable
-    @Transactional(propagation = Propagation.MANDATORY)
-    public <T> AuditLog<T> logDelete(T entity) {
-        boolean updated = unmarkCurrentAuditLogForEntity(entity);
-        if (!updated) {
-            return null;
+        if (action != DataAction.CREATE) {
+            unmarkCurrentAuditLogForEntity(entityManager, entityType, entityId);
         }
-        AuditLog<T> auditLog = prepareAuditLog(entity, DataAction.DELETE);
-        return repository.save(auditLog);
+        AuditLog<T> auditLog = prepareAuditLog(entity, action, transactionId);
+        entityManager.persist(auditLog);
+        return auditLog;
     }
 
-    @Nullable
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public <T> AuditLog<T> unmarkCurrentAuditLog(String entityType, Long entityId) {
-        AuditLog<T> previousAuditLog = repository.findByEntityTypeAndEntityIdAndCurrentTrue(entityType, entityId);
-        if (previousAuditLog == null) {
-            return null;
-        }
-        previousAuditLog.setCurrent(false);
-        return repository.save(previousAuditLog);
-    }
-
-    private <T> AuditLog<T> prepareAuditLog(T entity, DataAction action) {
+    private <T> AuditLog<T> prepareAuditLog(T entity, DataAction action, UUID transactionId) {
         AuditLog<T> auditLog = new AuditLog<>();
         auditLog.setEntity(entity);
         auditLog.setTime(ZonedDateTime.now());
         auditLog.setCurrent(true);
         auditLog.setUsername(securityContext.getUsername());
         auditLog.setDevice(deviceContext.currentDevice());
-        auditLog.setTransactionId(transactionContext.currentTransactionId());
+        auditLog.setTransactionId(transactionId);
         if (auditLog.getDevice() == null) {
             auditLog.setDevice("");
         }
@@ -88,16 +67,54 @@ public class AuditLogService {
         return auditLog;
     }
 
-    private <T> boolean unmarkCurrentAuditLogForEntity(T entity) {
-        String entityType = entity.getClass().getName();
-        Long entityId = getEntityId(entity);
-        AuditLog<T> previousAuditLog = self.unmarkCurrentAuditLog(entityType, entityId);
-        return previousAuditLog != null;
+    @Nullable
+    private <T> AuditLog<T> isAlreadyPersisted(EntityManager entityManager, @Nullable UUID transactionId,
+                                               String entityType, @Nullable Long entityId,
+                                               DataAction action) {
+        if (transactionId == null || entityId == null) {
+            return null;
+        }
+        AuditLog<T> sameTransactionAuditLog = repository.findByEntityTypeAndEntityIdAndTransactionId(
+                entityType, entityId, transactionId);
+        if (sameTransactionAuditLog == null) {
+            return null;
+        }
+        updateSameTransactionAuditLogIfNeeded(entityManager, sameTransactionAuditLog, action);
+        return sameTransactionAuditLog;
     }
 
-    private Long getEntityId(Object entity) {
+    private void updateSameTransactionAuditLogIfNeeded(EntityManager entityManager, AuditLog<?> present,
+                                                       DataAction action) {
+        if (present.getAction() == action) {
+            return;
+        }
+        if (present.getAction() == DataAction.CREATE && action == DataAction.UPDATE
+                || present.getAction() == DataAction.UPDATE && action == DataAction.CREATE) {
+            return;
+        }
+        entityManager.createQuery(
+                "update AuditLog a set a.action = ?1 where number = ?2")
+                .setParameter(1, action)
+                .setParameter(2, present.getNumber())
+                .executeUpdate();
+    }
+
+    private void unmarkCurrentAuditLogForEntity(EntityManager entityManager, String entityType,
+                                                Long entityId) {
+        entityManager.createQuery(
+                "update AuditLog a set a.current = false where entityType = ?1 and entityId = ?2")
+                .setParameter(1, entityType)
+                .setParameter(2, entityId)
+                .executeUpdate();
+    }
+
+    @Nullable
+    private Long getEntityId(Object entity, DataAction action) {
         Long id = EntityUtils.findId(entity, Long.class);
         if (id == null) {
+            if (action == DataAction.CREATE) {
+                return null;
+            }
             throw new AuditException("Can't save AuditLog: entity id is null");
         }
         return id;

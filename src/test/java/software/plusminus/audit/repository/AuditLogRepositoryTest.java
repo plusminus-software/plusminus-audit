@@ -71,13 +71,25 @@ public class AuditLogRepositoryTest {
         List<AuditLog<?>> result = repository.findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
                 Collections.singletonList(TestEntity.class.getName()),
                 "Device 2",
-                3L,
+                2L,
                 Pageable.unpaged())
                 .getContent();
 
         check(result).hasSize(2);
         check(result.get(0)).is(auditLogs.get(2));
         check(result.get(1)).is(auditLogs.get(8));
+    }
+
+    @Transactional
+    @Test
+    public void findWithoutDevice() {
+        List<AuditLog<?>> result = repository.findByEntityTypeInAndNumberGreaterThanAndCurrentTrue(
+                Collections.singletonList(TestEntity.class.getName()),
+                0L,
+                Pageable.unpaged())
+                .getContent();
+
+        check(result).is(auditLogs.get(2), auditLogs.get(5), auditLogs.get(8));
     }
 
     private void prepareEntityAndCommits(TestEntity entity) {

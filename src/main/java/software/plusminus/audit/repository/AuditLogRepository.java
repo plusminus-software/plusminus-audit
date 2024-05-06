@@ -6,10 +6,11 @@ import org.springframework.data.repository.Repository;
 import software.plusminus.audit.model.AuditLog;
 
 import java.util.List;
+import java.util.UUID;
 
-public interface AuditLogRepository extends Repository<AuditLog, Long> {
+public interface AuditLogRepository extends Repository<AuditLog<?>, Long> {
 
-    <T> AuditLog<T> save(AuditLog<T> auditLog);
+    <T> AuditLog<T>  findByEntityTypeAndEntityIdAndTransactionId(String entityType, Long entityId, UUID transactionId);
 
     <T> AuditLog<T> findByEntityTypeAndEntityIdAndCurrentTrue(String entityType, Long entityId);
 
