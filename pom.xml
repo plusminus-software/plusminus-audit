@@ -40,7 +40,7 @@
     
     <parent>
         <groupId>software.plusminus</groupId>
-        <artifactId>plusminus-opensource</artifactId>
+        <artifactId>plusminus-parent-public</artifactId>
         <version>1.0-SNAPSHOT</version>
         <relativePath/>
     </parent>
@@ -73,7 +73,11 @@
             <groupId>software.plusminus</groupId>
             <artifactId>plusminus-data</artifactId>
             <version>1.0-SNAPSHOT</version>
-            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>software.plusminus</groupId>
+            <artifactId>plusminus-context</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
         <!-- Test -->
         <dependency>

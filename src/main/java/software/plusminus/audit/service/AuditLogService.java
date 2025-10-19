@@ -1,14 +1,16 @@
 package software.plusminus.audit.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import software.plusminus.audit.exception.AuditException;
 import software.plusminus.audit.model.AuditLog;
-import software.plusminus.audit.model.DataAction;
 import software.plusminus.audit.repository.AuditLogRepository;
+import software.plusminus.audit.util.AuditLogUtil;
+import software.plusminus.context.Context;
+import software.plusminus.listener.DataAction;
 import software.plusminus.security.context.SecurityContext;
 import software.plusminus.tenant.service.TenantService;
 import software.plusminus.util.AnnotationUtils;
@@ -16,38 +18,36 @@ import software.plusminus.util.EntityUtils;
 import software.plusminus.util.FieldUtils;
 
 import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
-import javax.persistence.EntityManager;
+import java.util.stream.Collectors;
 
+@AllArgsConstructor
 @Service
 public class AuditLogService {
 
-    @Autowired
+    private Context<List<AuditLog<?>>> auditLogContext;
     private SecurityContext securityContext;
-    @Autowired
     private DeviceContext deviceContext;
-    @Autowired
     private TransactionContext transactionContext;
-    @Autowired
     private TenantService tenantService;
-    @Autowired
     private AuditLogRepository repository;
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public <T> AuditLog<T> log(EntityManager entityManager, T entity, DataAction action) {
+    public <T> AuditLog<T> log(T entity, DataAction action) {
         String entityType = entity.getClass().getName();
         Long entityId = getEntityId(entity, action);
         UUID transactionId = transactionContext.currentTransactionId();
-        AuditLog<T> alreadyAdded = isAlreadyPersisted(entityManager, transactionId,
-                entityType, entityId, action);
-        if (alreadyAdded != null) {
-            return alreadyAdded;
+        AuditLog<T> presentInTheContext = findInContext(entityType, entityId, transactionId, action);
+        if (presentInTheContext != null) {
+            updatePresentInContext(presentInTheContext, action);
+            return presentInTheContext;
         }
-        if (action != DataAction.CREATE) {
-            unmarkCurrentAuditLogForEntity(entityManager, entityType, entityId);
-        }
+        unmarkCurrentAuditLogForEntity(entityType, entityId, action);
         AuditLog<T> auditLog = prepareAuditLog(entity, action, transactionId);
-        entityManager.persist(auditLog);
+        auditLogContext.get().add(auditLog);
+        repository.save(auditLog);
         return auditLog;
     }
 
@@ -67,45 +67,15 @@ public class AuditLogService {
         return auditLog;
     }
 
-    @Nullable
-    private <T> AuditLog<T> isAlreadyPersisted(EntityManager entityManager, @Nullable UUID transactionId,
-                                               String entityType, @Nullable Long entityId,
-                                               DataAction action) {
-        if (transactionId == null || entityId == null) {
-            return null;
-        }
-        AuditLog<T> sameTransactionAuditLog = repository.findByEntityTypeAndEntityIdAndTransactionId(
-                entityType, entityId, transactionId);
-        if (sameTransactionAuditLog == null) {
-            return null;
-        }
-        updateSameTransactionAuditLogIfNeeded(entityManager, sameTransactionAuditLog, action);
-        return sameTransactionAuditLog;
-    }
-
-    private void updateSameTransactionAuditLogIfNeeded(EntityManager entityManager, AuditLog<?> present,
-                                                       DataAction action) {
-        if (present.getAction() == action) {
+    private void unmarkCurrentAuditLogForEntity(String entityType, Long entityId, DataAction action) {
+        if (action == DataAction.CREATE) {
             return;
         }
-        if (present.getAction() == DataAction.CREATE && action == DataAction.UPDATE
-                || present.getAction() == DataAction.UPDATE && action == DataAction.CREATE) {
-            return;
-        }
-        entityManager.createQuery(
-                "update AuditLog a set a.action = ?1 where number = ?2")
-                .setParameter(1, action)
-                .setParameter(2, present.getNumber())
-                .executeUpdate();
-    }
-
-    private void unmarkCurrentAuditLogForEntity(EntityManager entityManager, String entityType,
-                                                Long entityId) {
-        entityManager.createQuery(
-                "update AuditLog a set a.current = false where entityType = ?1 and entityId = ?2")
-                .setParameter(1, entityType)
-                .setParameter(2, entityId)
-                .executeUpdate();
+        repository.findByEntityTypeAndEntityIdAndCurrentTrue(entityType, entityId)
+                        .forEach(auditLog -> {
+                            auditLog.setCurrent(false);
+                            repository.save(auditLog);
+                        });
     }
 
     @Nullable
@@ -127,5 +97,60 @@ public class AuditLogService {
             tenant = tenantService.currentTenant();
         }
         return tenant;
+    }
+
+    @Nullable
+    private <T> AuditLog<T> findInContext(String entityType, Long entityId, UUID transactionId,
+                                          DataAction dataAction) {
+        List<AuditLog<T>> presentInContext = auditLogContext.get().stream()
+                .filter(auditLog -> {
+                    String presentEntityType = auditLog.getEntity().getClass().getName();
+                    Long presentEntityId = getEntityId(auditLog.getEntity(), dataAction);
+                    return Objects.equals(presentEntityType, entityType)
+                            && Objects.equals(presentEntityId, entityId);
+                })
+                .map(auditLog -> (AuditLog<T>) auditLog)
+                .collect(Collectors.toList());
+        if (presentInContext.isEmpty()) {
+            return null;
+        }
+        if (presentInContext.size() > 1) {
+            throw new AuditException("More than one AuditLog present in the context with entityType "
+                    + entityType + " and entityId " + entityId);
+        }
+        if (!Objects.equals(presentInContext.get(0).getTransactionId(), transactionId)) {
+            throw new AuditException("The AuditLog present in the context with entityType "
+                    + entityType + " and entityId " + entityId + " has different transactionId");
+        }
+        return presentInContext.get(0);
+    }
+
+    private <T> void updatePresentInContext(AuditLog<T> presentInContext, DataAction newAction) {
+        if (presentInContext.getAction() == newAction) {
+            return;
+        }
+        if (presentInContext.getAction() == DataAction.CREATE
+                && newAction == DataAction.UPDATE) {
+            return;
+        }
+        if (presentInContext.getAction() == DataAction.CREATE
+                && newAction == DataAction.DELETE) {
+            auditLogContext.get().remove(presentInContext);
+            repository.delete(presentInContext);
+            return;
+        }
+        if (presentInContext.getAction() == DataAction.UPDATE
+                && newAction == DataAction.DELETE) {
+            presentInContext.setAction(DataAction.DELETE);
+            repository.save(presentInContext);
+            return;
+        }
+        if (presentInContext.getAction() == DataAction.DELETE
+                && newAction == DataAction.UPDATE) {
+            presentInContext.setAction(DataAction.UPDATE);
+            repository.save(presentInContext);
+            return;
+        }
+        AuditLogUtil.verifyPresentInContext(presentInContext, newAction);
     }
 }

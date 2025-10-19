@@ -9,15 +9,14 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-import software.plusminus.audit.InnerEntity;
-import software.plusminus.audit.TestEntity;
-import software.plusminus.audit.TestEntityRepository;
-import software.plusminus.audit.TransactionalService;
 import software.plusminus.audit.exception.AuditException;
+import software.plusminus.audit.fixtures.InnerEntity;
+import software.plusminus.audit.fixtures.TestEntity;
+import software.plusminus.audit.fixtures.TransactionalService;
 import software.plusminus.audit.model.AuditLog;
-import software.plusminus.audit.model.DataAction;
 import software.plusminus.check.util.JsonUtils;
-import software.plusminus.data.service.data.DataService;
+import software.plusminus.data.service.DataService;
+import software.plusminus.listener.DataAction;
 import software.plusminus.security.context.SecurityContext;
 
 import java.util.UUID;
@@ -34,8 +33,6 @@ public class AuditLogListenerIntegrationTest {
 
     @Autowired
     private TransactionalService transactionalService;
-    @Autowired
-    private TestEntityRepository entityRepository;
     @Autowired
     private EntityManager entityManager;
     @Autowired
@@ -54,9 +51,9 @@ public class AuditLogListenerIntegrationTest {
         entity.setVersion(null);
         entity.setTenant("localhost");
 
-        TestEntity created = entityRepository.save(entity);
+        TestEntity created = transactionalService.inTransaction(() -> dataService.create(entity));
         created.setMyField("changed");
-        entityRepository.save(created);
+        transactionalService.inTransaction(() -> dataService.update(created));
 
         AuditLog<?> auditLog1 = entityManager.find(AuditLog.class, 1L);
         AuditLog<?> auditLog2 = entityManager.find(AuditLog.class, 2L);
@@ -77,8 +74,8 @@ public class AuditLogListenerIntegrationTest {
                 .thenReturn(transactionId);
 
         transactionalService.inTransaction(() -> {
-            TestEntity created = entityRepository.save(entity);
-            entityRepository.save(created);
+            TestEntity created = dataService.create(entity);
+            dataService.update(created);
         });
 
         AuditLog<?> auditLog1 = entityManager.find(AuditLog.class, 1L);
@@ -86,6 +83,25 @@ public class AuditLogListenerIntegrationTest {
         assertThat(auditLog1.isCurrent()).isTrue();
         assertThat(auditLog1.getTransactionId()).isEqualTo(transactionId);
         assertThat(auditLog1.getAction()).isEqualTo(DataAction.CREATE);
+        assertThat(auditLogNull).isNull();
+    }
+
+    @Test
+    public void createAndDeleteInTheSameTransaction() {
+        UUID transactionId = UUID.randomUUID();
+        TestEntity entity = JsonUtils.fromJson("/json/test-entity.json", TestEntity.class);
+        entity.setId(null);
+        entity.setVersion(null);
+        entity.setTenant("localhost");
+        when(transactionContext.currentTransactionId())
+                .thenReturn(transactionId);
+
+        transactionalService.inTransaction(() -> {
+            TestEntity created = dataService.create(entity);
+            dataService.delete(created);
+        });
+
+        AuditLog<?> auditLogNull = entityManager.find(AuditLog.class, 1L);
         assertThat(auditLogNull).isNull();
     }
 
@@ -122,7 +138,7 @@ public class AuditLogListenerIntegrationTest {
         boolean exception = false;
         try {
             transactionalService.inTransaction(() -> {
-                entityRepository.save(entity);
+                dataService.create(entity);
                 throw new AuditException("Test exception");
             });
         } catch (AuditException ignored) {
@@ -140,13 +156,13 @@ public class AuditLogListenerIntegrationTest {
         entity.setId(null);
         entity.setVersion(null);
         entity.setTenant("localhost");
-        TestEntity created = entityRepository.save(entity);
+        TestEntity created = transactionalService.inTransaction(() -> dataService.create(entity));
         boolean exception = false;
         try {
             transactionalService.inTransaction(() -> {
                 created.setMyField("changed");
                 created.setVersion(123L);
-                entityRepository.save(created);
+                dataService.update(created);
             });
         } catch (ObjectOptimisticLockingFailureException ignored) {
             exception = true;
@@ -166,11 +182,11 @@ public class AuditLogListenerIntegrationTest {
         entity.setVersion(null);
         entity.setTenant("localhost");
 
-        TestEntity created = entityRepository.save(entity);
+        TestEntity created = transactionalService.inTransaction(() -> dataService.create(entity));
         created.setMyField("changed 1");
-        TestEntity updated1 = entityRepository.save(created);
+        TestEntity updated1 = transactionalService.inTransaction(() -> dataService.update(created));
         updated1.setMyField("changed 2");
-        TestEntity updated2 = entityRepository.save(updated1);
+        TestEntity updated2 = transactionalService.inTransaction(() -> dataService.update(updated1));
 
         assertThat(entity.getVersion()).isZero();
         assertThat(created.getVersion()).isZero();
@@ -186,11 +202,11 @@ public class AuditLogListenerIntegrationTest {
         entity.setVersion(null);
         entity.setTenant("localhost");
         transactionalService.inTransaction(() -> {
-            TestEntity created = entityRepository.save(entity);
+            TestEntity created = dataService.create(entity);
             created.setMyField("1");
-            TestEntity updated1 = entityRepository.save(created);
+            TestEntity updated1 = dataService.update(created);
             updated1.setMyField("2");
-            entityRepository.save(updated1);
+            dataService.update(updated1);
         });
 
         assertThat(entity.getVersion()).isEqualTo(1);

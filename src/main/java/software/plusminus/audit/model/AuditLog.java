@@ -10,6 +10,7 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.Type;
+import software.plusminus.listener.DataAction;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;

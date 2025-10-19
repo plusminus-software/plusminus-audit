@@ -11,7 +11,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
-import software.plusminus.audit.TestEntity;
+import software.plusminus.audit.fixtures.TestEntity;
 import software.plusminus.audit.model.AuditLog;
 import software.plusminus.check.util.JsonUtils;
 import software.plusminus.inject.NoInject;
@@ -60,9 +60,9 @@ public class AuditLogRepositoryTest {
     @Transactional
     @Test
     public void findByEntityTypeAndEntityId() {
-        AuditLog result = repository.findByEntityTypeAndEntityIdAndCurrentTrue(
-                TestEntity.class.getName(), 2L);
-        check(result).is(auditLogs.get(5));
+        List<AuditLog<TestEntity>> result = repository.findByEntityTypeAndEntityIdAndCurrentTrue(TestEntity.class, 2L);
+        check(result).hasSize(1);
+        check(result.get(0)).is(auditLogs.get(5));
     }
 
     @Transactional

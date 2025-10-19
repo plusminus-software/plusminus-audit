@@ -6,13 +6,14 @@ import org.springframework.data.repository.Repository;
 import software.plusminus.audit.model.AuditLog;
 
 import java.util.List;
-import java.util.UUID;
 
 public interface AuditLogRepository extends Repository<AuditLog<?>, Long> {
 
-    <T> AuditLog<T>  findByEntityTypeAndEntityIdAndTransactionId(String entityType, Long entityId, UUID transactionId);
+    default <T> List<AuditLog<T>> findByEntityTypeAndEntityIdAndCurrentTrue(Class<T> entityType, Long entityId) {
+        return findByEntityTypeAndEntityIdAndCurrentTrue(entityType.getName(), entityId);
+    }
 
-    <T> AuditLog<T> findByEntityTypeAndEntityIdAndCurrentTrue(String entityType, Long entityId);
+    <T> List<AuditLog<T>> findByEntityTypeAndEntityIdAndCurrentTrue(String entityType, Long entityId);
 
     @SuppressWarnings("squid:S1452")
     <T> Page<AuditLog<? extends T>> findByEntityTypeInAndNumberGreaterThanAndCurrentTrue(
@@ -24,5 +25,9 @@ public interface AuditLogRepository extends Repository<AuditLog<?>, Long> {
 
     @SuppressWarnings("squid:S1452")
     <T> Page<AuditLog<? extends T>> findByCurrentTrue(Pageable pageable);
+
+    <T> AuditLog<T> save(AuditLog<T> auditLog);
+
+    <T> AuditLog<T> delete(AuditLog<T> auditLog);
 
 }
