@@ -1,23 +1,18 @@
 package software.plusminus.audit.service;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 import software.plusminus.audit.exception.AuditException;
 import software.plusminus.audit.fixtures.InnerEntity;
 import software.plusminus.audit.fixtures.TestEntity;
 import software.plusminus.audit.fixtures.TransactionalService;
 import software.plusminus.audit.model.AuditLog;
 import software.plusminus.check.util.JsonUtils;
+import software.plusminus.crud.CrudAction;
 import software.plusminus.data.service.DataService;
-import software.plusminus.listener.DataAction;
-import software.plusminus.security.context.SecurityContext;
+import software.plusminus.test.IntegrationTest;
 
 import java.util.UUID;
 import javax.persistence.EntityManager;
@@ -25,11 +20,7 @@ import javax.persistence.EntityManager;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-@ActiveProfiles("test")
-public class AuditLogListenerIntegrationTest {
+public class AuditLogListenerIntegrationTest extends IntegrationTest {
 
     @Autowired
     private TransactionalService transactionalService;
@@ -38,11 +29,8 @@ public class AuditLogListenerIntegrationTest {
     @Autowired
     private DataService dataService;
 
-    @SuppressWarnings("PMD.UnusedPrivateField")
     @MockBean
-    private SecurityContext securityContext;
-    @MockBean
-    private TransactionContext transactionContext;
+    private TransactionIdProvider transactionIdProvider;
 
     @Test
     public void createAndUpdateInDifferentTransactions() {
@@ -70,7 +58,7 @@ public class AuditLogListenerIntegrationTest {
         entity.setId(null);
         entity.setVersion(null);
         entity.setTenant("localhost");
-        when(transactionContext.currentTransactionId())
+        when(transactionIdProvider.currentTransactionId())
                 .thenReturn(transactionId);
 
         transactionalService.inTransaction(() -> {
@@ -82,7 +70,7 @@ public class AuditLogListenerIntegrationTest {
         AuditLog<?> auditLogNull = entityManager.find(AuditLog.class, 2L);
         assertThat(auditLog1.isCurrent()).isTrue();
         assertThat(auditLog1.getTransactionId()).isEqualTo(transactionId);
-        assertThat(auditLog1.getAction()).isEqualTo(DataAction.CREATE);
+        assertThat(auditLog1.getAction()).isEqualTo(CrudAction.CREATE);
         assertThat(auditLogNull).isNull();
     }
 
@@ -93,7 +81,7 @@ public class AuditLogListenerIntegrationTest {
         entity.setId(null);
         entity.setVersion(null);
         entity.setTenant("localhost");
-        when(transactionContext.currentTransactionId())
+        when(transactionIdProvider.currentTransactionId())
                 .thenReturn(transactionId);
 
         transactionalService.inTransaction(() -> {
@@ -141,7 +129,7 @@ public class AuditLogListenerIntegrationTest {
                 dataService.create(entity);
                 throw new AuditException("Test exception");
             });
-        } catch (AuditException ignored) {
+        } catch (IllegalStateException ignored) {
             exception = true;
         }
 

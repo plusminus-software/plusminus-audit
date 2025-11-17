@@ -61,7 +61,7 @@
         </dependency>
         <dependency>
             <groupId>software.plusminus</groupId>
-            <artifactId>plusminus-security</artifactId>
+            <artifactId>plusminus-security-core</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
@@ -77,6 +77,11 @@
         <dependency>
             <groupId>software.plusminus</groupId>
             <artifactId>plusminus-context</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>software.plusminus</groupId>
+            <artifactId>plusminus-transaction-context</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <!-- Test -->

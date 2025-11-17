@@ -5,9 +5,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
 import software.plusminus.audit.annotation.Auditable;
-import software.plusminus.listener.DataAction;
-import software.plusminus.listener.JoinPoint;
-import software.plusminus.listener.WriteListener;
+import software.plusminus.crud.CrudAction;
+import software.plusminus.crud.listener.CrudJoinpoint;
+import software.plusminus.crud.listener.WriteListener;
+import software.plusminus.listener.Joinpoint;
 
 @AllArgsConstructor
 @Component
@@ -17,8 +18,8 @@ public class AuditLogListener implements WriteListener<Object> {
     private AuditLogService service;
 
     @Override
-    public JoinPoint joinPoint() {
-        return JoinPoint.AFTER;
+    public Joinpoint joinpoint() {
+        return CrudJoinpoint.AFTER;
     }
 
     @Override
@@ -27,7 +28,7 @@ public class AuditLogListener implements WriteListener<Object> {
     }
 
     @Override
-    public void onWrite(Object object, DataAction action) {
+    public void onWrite(Object object, CrudAction action) {
         service.log(object, action);
     }
 }

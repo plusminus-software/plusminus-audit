@@ -2,44 +2,29 @@ package software.plusminus.audit.repository;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Pageable;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.annotation.Transactional;
 import software.plusminus.audit.fixtures.TestEntity;
+import software.plusminus.audit.fixtures.TransactionalService;
 import software.plusminus.audit.model.AuditLog;
 import software.plusminus.check.util.JsonUtils;
-import software.plusminus.inject.NoInject;
-import software.plusminus.security.context.SecurityContext;
+import software.plusminus.test.IntegrationTest;
+import software.plusminus.test.util.TestEntityManager;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 
 import static software.plusminus.check.Checks.check;
 
-@NoInject
-@RunWith(SpringRunner.class)
-@SpringBootTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-@ActiveProfiles("test")
-public class AuditLogRepositoryTest {
+public class AuditLogRepositoryTest extends IntegrationTest {
 
-    @PersistenceContext
-    private EntityManager entityManager;
+    @Autowired
+    private TestEntityManager entityManager;
+    @Autowired
+    private TransactionalService transactionalService;
     @Autowired
     private AuditLogRepository repository;
-
-    @SuppressWarnings("PMD.UnusedPrivateField")
-    @MockBean
-    private SecurityContext securityService;
 
     private List<TestEntity> entities;
     private List<AuditLog> auditLogs;
@@ -53,11 +38,12 @@ public class AuditLogRepositoryTest {
         entities.forEach(this::prepareEntityAndCommits);
 
         entities.forEach(entityManager::persist);
-        entityManager.createQuery("delete from AuditLog").executeUpdate();
+        transactionalService.inTransaction(
+                () -> entityManager.createQuery("delete from AuditLog").executeUpdate()
+        );
         auditLogs.forEach(entityManager::persist);
     }
 
-    @Transactional
     @Test
     public void findByEntityTypeAndEntityId() {
         List<AuditLog<TestEntity>> result = repository.findByEntityTypeAndEntityIdAndCurrentTrue(TestEntity.class, 2L);
@@ -65,14 +51,13 @@ public class AuditLogRepositoryTest {
         check(result.get(0)).is(auditLogs.get(5));
     }
 
-    @Transactional
     @Test
     public void findIgnoringDevice() {
         List<AuditLog<?>> result = repository.findByEntityTypeInAndDeviceIsNotAndNumberGreaterThanAndCurrentTrue(
-                Collections.singletonList(TestEntity.class.getName()),
-                "Device 2",
-                2L,
-                Pageable.unpaged())
+                        Collections.singletonList(TestEntity.class.getName()),
+                        "Device 2",
+                        2L,
+                        Pageable.unpaged())
                 .getContent();
 
         check(result).hasSize(2);
@@ -80,13 +65,12 @@ public class AuditLogRepositoryTest {
         check(result.get(1)).is(auditLogs.get(8));
     }
 
-    @Transactional
     @Test
     public void findWithoutDevice() {
         List<AuditLog<?>> result = repository.findByEntityTypeInAndNumberGreaterThanAndCurrentTrue(
-                Collections.singletonList(TestEntity.class.getName()),
-                0L,
-                Pageable.unpaged())
+                        Collections.singletonList(TestEntity.class.getName()),
+                        0L,
+                        Pageable.unpaged())
                 .getContent();
 
         check(result).is(auditLogs.get(2), auditLogs.get(5), auditLogs.get(8));
@@ -97,11 +81,8 @@ public class AuditLogRepositoryTest {
         auditLogs.subList(index * 3, index * 3 + 3)
                 .forEach(auditLog -> {
                     auditLog.setNumber(null);
-                    auditLog.setEntityType(null);
-                    auditLog.setEntityId(null);
                     auditLog.setEntity(entity);
                 });
-
         entity.setId(null);
     }
 }

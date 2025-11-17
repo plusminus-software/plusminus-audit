@@ -10,7 +10,7 @@ import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.Type;
-import software.plusminus.listener.DataAction;
+import software.plusminus.crud.CrudAction;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -31,11 +31,8 @@ import javax.persistence.Table;
 @EqualsAndHashCode(of = "number")
 @ToString(of = "number")
 @FilterDef(name = "tenantFilter", parameters = @ParamDef(name = "tenant", type = "string"))
-@Filter(name = "tenantFilter", condition = "tenant = :tenant")
-@Table(indexes = {
-        @Index(columnList = "entity_type, entity_id, current, tenant"),
-        @Index(columnList = "entity_type, device, number, current, tenant")
-})
+@Filter(name = "tenantFilter", condition = "tenant = :tenant or (:tenant = '' and tenant is null)")
+@Table(indexes = @Index(columnList = "tenant, entity_type, current, number"))
 @Entity
 public class AuditLog<T> {
 
@@ -72,7 +69,7 @@ public class AuditLog<T> {
     private String device;
 
     @Enumerated(EnumType.STRING)
-    private DataAction action;
+    private CrudAction action;
 
     private boolean current;
 

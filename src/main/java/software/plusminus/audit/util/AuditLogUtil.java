@@ -3,26 +3,25 @@ package software.plusminus.audit.util;
 import lombok.experimental.UtilityClass;
 import software.plusminus.audit.exception.AuditException;
 import software.plusminus.audit.model.AuditLog;
-import software.plusminus.listener.DataAction;
+import software.plusminus.crud.CrudAction;
 
 @UtilityClass
 public class AuditLogUtil {
 
-    public void verifyPresentInContext(AuditLog<?> presentInContext, DataAction newAction) {
-        if (presentInContext.getAction() == DataAction.UPDATE
-                && newAction == DataAction.CREATE) {
-            throw new AuditException("Cannot save CREATE AuditLog: the UPDATE AuditLog is already present"
-                    + " in the context with entity " + presentInContext.getEntity());
+    public void verifyPresentAuditLogOnCreate(AuditLog<?> presentAuditLog) {
+        if (presentAuditLog.getAction() != CrudAction.CREATE) {
+            throwException(CrudAction.CREATE, presentAuditLog);
         }
-        if (presentInContext.getAction() == DataAction.DELETE
-                && newAction == DataAction.CREATE) {
-            throw new AuditException("Cannot save CREATE AuditLog: the DELETE AuditLog is already present"
-                    + " in the context with entity " + presentInContext.getEntity());
-        }
-        throw new AuditException("Unknown combination of AuditLog present in the context (with"
-                + " entity " + presentInContext.getEntity()
-                + " and action " + presentInContext.getAction()
-                + ") from one side and a new action " + newAction + " from other.");
     }
 
+    public void verifyPresentAuditLogOnPatch(AuditLog<?> presentAuditLog) {
+        if (presentAuditLog.getAction() == CrudAction.DELETE) {
+            throwException(CrudAction.PATCH, presentAuditLog);
+        }
+    }
+
+    private void throwException(CrudAction newAction, AuditLog<?> presentAuditLog) {
+        throw new AuditException("Cannot save " + newAction + " AuditLog: the " + presentAuditLog.getAction()
+                + " AuditLog is already present in the transaction for entity " + presentAuditLog.getEntity());
+    }
 }

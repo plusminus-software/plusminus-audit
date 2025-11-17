@@ -17,12 +17,12 @@ import static org.mockito.Mockito.when;
 import static software.plusminus.check.Checks.check;
 
 @RunWith(MockitoJUnitRunner.class)
-public class TransactionContextTest {
+public class TransactionIdProviderTest {
 
     @Mock
     private HttpServletRequest request;
     @InjectMocks
-    private TransactionContext transactionContext;
+    private TransactionIdProvider transactionIdProvider;
 
     private String transactionId = "3a37e67d-a8b2-4c35-9e6f-a4e4b686ffb5";
 
@@ -39,20 +39,20 @@ public class TransactionContextTest {
     @Test
     public void correctTransactionId() {
         when(request.getParameter("transaction")).thenReturn(transactionId);
-        UUID actual = transactionContext.currentTransactionId();
+        UUID actual = transactionIdProvider.currentTransactionId();
         check(actual).is(transactionId);
     }
 
     @Test
     public void incorrectTransactionId() {
         when(request.getParameter("transaction")).thenReturn("incorrect uuid");
-        UUID actual = transactionContext.currentTransactionId();
+        UUID actual = transactionIdProvider.currentTransactionId();
         check(actual).isNull();
     }
 
     @Test
     public void missedTransactionId() {
-        UUID actual = transactionContext.currentTransactionId();
+        UUID actual = transactionIdProvider.currentTransactionId();
         check(actual).isNull();
     }
 }
